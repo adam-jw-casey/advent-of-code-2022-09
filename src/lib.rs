@@ -118,18 +118,36 @@ impl Snake{
 /// assert_eq!(
 ///     13,
 ///     count_tail_positions(concat!(
-///         "R 4\n",
-///         "U 4\n",
-///         "L 3\n",
-///         "D 1\n",
-///         "R 4\n",
-///         "D 1\n",
-///         "L 5\n",
-///         "R 2"
-///     ))
-/// )
+///             "R 4\n",
+///             "U 4\n",
+///             "L 3\n",
+///             "D 1\n",
+///             "R 4\n",
+///             "D 1\n",
+///             "L 5\n",
+///             "R 2"
+///         ),
+///         2
+///     )
+/// );
+///
+/// assert_eq!(
+///     36,
+///     count_tail_positions(concat!(
+///             "R 5\n",
+///             "U 8\n",
+///             "L 8\n",
+///             "D 3\n",
+///             "R 17\n",
+///             "D 10\n",
+///             "L 25\n",
+///             "U 20"
+///         ),
+///         10
+///     )
+/// );
 /// ```
-pub fn count_tail_positions(input_moves: &str) -> usize{
+pub fn count_tail_positions(input_moves: &str, snake_size: u8) -> usize{
     let mut snake = Snake::new();
     let mut tail_positions = HashSet::new();
     let mut dir: Direction;
