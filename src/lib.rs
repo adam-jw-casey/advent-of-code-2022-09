@@ -35,6 +35,13 @@ impl Position{
             y: 0
         }
     }
+
+    pub fn unit(&self) -> Self{
+        Position{
+            x: self.x.signum(),
+            y: self.y.signum()
+        }
+    }
 }
 
 impl_op_ex!(+|a: &Position, b: &Position| -> Position {
@@ -46,8 +53,7 @@ impl_op_ex!(-|a: &Position, b: &Position| -> Position {
 });
 
 pub struct Snake{
-    pub head: Position,
-    pub tail: Position
+    body: Vec<Position>
 }
 
 impl Snake{
@@ -57,16 +63,24 @@ impl Snake{
     /// 
     /// use advent_of_code_2022_09::Snake;
     /// use advent_of_code_2022_09::Position;
-    /// let snake = Snake::new();
+    /// let snake = Snake::new(2);
     ///
-    /// assert_eq!(snake.head, Position{x:0, y:0});
-    /// assert_eq!(snake.tail, Position{x:0, y:0});
+    /// assert_eq!(*snake.head(), Position{x:0, y:0});
+    /// assert_eq!(*snake.tail(), Position{x:0, y:0});
     /// ```
-    pub fn new() -> Self{
+    pub fn new(length: u8) -> Self{
+        assert!(length > 0);
         Self{
-            head: Position::new(),
-            tail: Position::new()
+            body: (0..length).map(|_| Position::new()).collect()
         }
+    }
+
+    pub fn head(&self) -> &Position{
+        &self.body.first().unwrap()
+    }
+
+    pub fn tail(&self) -> &Position{
+        &self.body.last().unwrap()
     }
 
     /// Move the snake head, and the tail if necessary
@@ -75,37 +89,40 @@ impl Snake{
     /// use advent_of_code_2022_09::Snake;
     /// use advent_of_code_2022_09::Direction;
     /// use advent_of_code_2022_09::Position;
-    /// let mut snake = Snake::new();
+    /// let mut snake = Snake::new(2);
     ///
     /// snake.step(&Direction::Up);
-    /// assert_eq!(snake.head, Position{x:0, y:1});
-    /// assert_eq!(snake.tail, Position{x:0, y:0});
+    /// assert_eq!(*snake.head(), Position{x:0, y:1});
+    /// assert_eq!(*snake.tail(), Position{x:0, y:0});
     ///
     /// snake.step(&Direction::Right);
-    /// assert_eq!(snake.head, Position{x:1, y:1});
-    /// assert_eq!(snake.tail, Position{x:0, y:0});
+    /// assert_eq!(*snake.head(), Position{x:1, y:1});
+    /// assert_eq!(*snake.tail(), Position{x:0, y:0});
     ///
     /// snake.step(&Direction::Right);
-    /// assert_eq!(snake.head, Position{x:2, y:1});
-    /// assert_eq!(snake.tail, Position{x:1, y:1});
+    /// assert_eq!(*snake.head(), Position{x:2, y:1});
+    /// assert_eq!(*snake.tail(), Position{x:1, y:1});
     ///
     /// snake.step(&Direction::Right);
-    /// assert_eq!(snake.head, Position{x:3, y:1});
-    /// assert_eq!(snake.tail, Position{x:2, y:1});
+    /// assert_eq!(*snake.head(), Position{x:3, y:1});
+    /// assert_eq!(*snake.tail(), Position{x:2, y:1});
     ///
     /// snake.step(&Direction::Down);
-    /// assert_eq!(snake.head, Position{x:3, y:0});
-    /// assert_eq!(snake.tail, Position{x:2, y:1});
+    /// assert_eq!(*snake.head(), Position{x:3, y:0});
+    /// assert_eq!(*snake.tail(), Position{x:2, y:1});
     ///
     /// snake.step(&Direction::Left);
-    /// assert_eq!(snake.head, Position{x:2, y:0});
-    /// assert_eq!(snake.tail, Position{x:2, y:1});
+    /// assert_eq!(*snake.head(), Position{x:2, y:0});
+    /// assert_eq!(*snake.tail(), Position{x:2, y:1});
     /// ```
     pub fn step(&mut self, dir: &Direction){
-        self.head = &self.head + dir.delta();
-        let trail = &self.head - &self.tail;
-        if trail.x.abs() > 1 || trail.y.abs() > 1{
-            self.tail = self.head - dir.delta();
+        self.body[0] = self.body[0] + dir.delta();
+
+        for i in 1..self.body.len(){
+            let trail = &self.body[i-1] - &self.body[i];
+            if trail.x.abs() > 1 || trail.y.abs() > 1{
+                self.body[i] = self.body[i] + trail.unit();
+            }
         }
     }
 }
@@ -132,6 +149,22 @@ impl Snake{
 /// );
 ///
 /// assert_eq!(
+///     1,
+///     count_tail_positions(concat!(
+///             "R 4\n",
+///             "U 4\n",
+///             "L 3\n",
+///             "D 1\n",
+///             "R 4\n",
+///             "D 1\n",
+///             "L 5\n",
+///             "R 2"
+///         ),
+///         10
+///     )
+/// );
+///
+/// assert_eq!(
 ///     36,
 ///     count_tail_positions(concat!(
 ///             "R 5\n",
@@ -148,13 +181,13 @@ impl Snake{
 /// );
 /// ```
 pub fn count_tail_positions(input_moves: &str, snake_size: u8) -> usize{
-    let mut snake = Snake::new();
+    let mut snake = Snake::new(snake_size);
     let mut tail_positions = HashSet::new();
     let mut dir: Direction;
     let mut n: u8;
     let mut parsed: (char, u8);
 
-    tail_positions.insert(snake.tail);
+    tail_positions.insert(*snake.tail());
     for line in input_moves.lines(){
         parsed = sscanf!(line, "{char} {u8}")
             .expect("Input should be properly formatted");
@@ -170,7 +203,7 @@ pub fn count_tail_positions(input_moves: &str, snake_size: u8) -> usize{
 
         for _i in 0..n{
             snake.step(&dir);
-            tail_positions.insert(snake.tail);
+            tail_positions.insert(*snake.tail());
         }
     }
 
